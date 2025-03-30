@@ -1,0 +1,16 @@
+[package]
+name = "kondo"
+version = "0.1.0-alpha.1"
+edition = "2024"
+
+[dependencies]
+chrono = "0.4.40"
+clap = { version = "4.5.34", features = ["derive"] }
+config = { version = "0.15.11", features = ["toml"] }
+dirs = "6.0.0"
+serde = { version = "1.0.219", features = ["derive"] }
+sqlx = { version = "0.8.3", features = ["derive", "runtime-tokio", "sqlite"] }
+tempfile = "3.19.1"
+thiserror = "2.0.12"
+tokio = { version = "1.44.1", features = ["full"] }
+winnow = { version = "0.7.4", features = ["debug"] }
