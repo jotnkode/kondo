@@ -8,11 +8,13 @@ use thiserror::Error;
 use tokio::process::{self, Command};
 use tempfile::{tempfile, NamedTempFile};
 use tokio::fs;
+use list_ui::run;
 
 mod config;
 mod content_parser;
 mod database;
 mod kondo;
+mod list_ui;
 
 #[derive(Debug, Error)]
 enum Error {
@@ -37,6 +39,9 @@ enum Commands {
     Edit {
         #[arg(short, long, value_name = "FILE")]
         file_name: String,
+    },
+    List {
+
     },
 }
 
@@ -83,9 +88,8 @@ async fn main() {
 
     let cmds = Cmd::parse();
     match &cmds.commands {
-        Commands::Edit { file_name } => {
-            edit(file_name).await;
-        }
-        Commands::Add { date, content } => add(date, content).await,
+        Commands::Edit{file_name}=>{edit(file_name).await;}
+        Commands::Add{date,content}=> {add(date,content).await},
+        Commands::List {  } => {run().unwrap()},
     }
 }

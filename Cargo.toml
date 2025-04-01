@@ -6,8 +6,11 @@ edition = "2024"
 [dependencies]
 chrono = "0.4.40"
 clap = { version = "4.5.34", features = ["derive"] }
+color-eyre = "0.6.3"
 config = { version = "0.15.11", features = ["toml"] }
+crossterm = "0.28.1"
 dirs = "6.0.0"
+ratatui = "0.29.0"
 serde = { version = "1.0.219", features = ["derive"] }
 sqlx = { version = "0.8.3", features = ["derive", "runtime-tokio", "sqlite"] }
 tempfile = "3.19.1"
