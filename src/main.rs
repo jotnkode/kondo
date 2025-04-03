@@ -2,6 +2,7 @@ use std::io::Write;
 
 use chrono::{Days, NaiveDate, Utc};
 use clap::{Parser, Subcommand};
+use config::Configuration;
 use content_parser::parse_task;
 use database::insert_task;
 use kondo::Task;
@@ -11,12 +12,16 @@ use tempfile::NamedTempFile;
 use thiserror::Error;
 use tokio::fs;
 use tokio::process::{Command};
+use tokio::sync::OnceCell;
 
 mod config;
 mod content_parser;
 mod database;
 mod kondo;
 mod list_ui;
+
+
+static CFG: OnceCell<Configuration> = OnceCell::new();
 
 #[derive(Debug, Error)]
 enum Error {}
@@ -75,7 +80,7 @@ async fn edit(_file_name: &str) {
 }
 
 async fn add(pool: &SqlitePool, date: &Option<NaiveDate>, content: &Option<String>) {
-    let cfg = crate::config::Configuration::new();
+    let cfg = CFG.get().expect("Can't load configuration");
     let days = Days::new(
         cfg.kondo
             .default_deadline
@@ -94,12 +99,18 @@ async fn add(pool: &SqlitePool, date: &Option<NaiveDate>, content: &Option<Strin
             .expect("Can't get task from editor");
         _ = insert_task(pool, &task).await;
     } else {
-        if let (Some(_d), Some(_c)) = (date.clone(), content.clone()) {}
+        if let (Some(deadline), Some(content)) = (date.clone(), content.clone()) {
+            let task = Task::new(None, deadline, &content);
+            _ = insert_task(pool, &task).await;
+        }
     }
 }
 
 #[tokio::main]
 async fn main() {
+    let cfg = crate::config::Configuration::new();
+    CFG.set(cfg);
+
     let pool = sqlx::SqlitePool::connect_lazy("sqlite:kondo-test.db").unwrap();
     match sqlx::migrate!().run(&pool).await {
         Ok(_) => println!("Database setup complete."),
