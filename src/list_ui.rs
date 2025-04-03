@@ -2,10 +2,10 @@ use color_eyre::{owo_colors::OwoColorize, Result};
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use ratatui::{
     layout::Alignment::Center, prelude::{Buffer, Rect}, style::{
-        palette::tailwind::SLATE, Color, Modifier, Style, Stylize
+        Color, Modifier, Style, Stylize
     }, symbols, text::{Line, Text}, widgets::{
-        Block, Borders, HighlightSpacing, List, ListItem, ListState, Paragraph, StatefulWidget, Widget
-    }, DefaultTerminal, Frame
+        Block, Borders, HighlightSpacing, List, ListItem, ListState, StatefulWidget, Widget
+    }, DefaultTerminal
 };
 use sqlx::SqlitePool;
 

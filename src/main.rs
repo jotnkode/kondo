@@ -1,8 +1,4 @@
-use std::{
-    io::{Read, Write},
-    os::fd::AsRawFd,
-    path::{Path, PathBuf},
-};
+use std::io::Write;
 
 use chrono::{Days, NaiveDate, Utc};
 use clap::{Parser, Subcommand};
@@ -11,10 +7,10 @@ use database::insert_task;
 use kondo::Task;
 use list_ui::run;
 use sqlx::SqlitePool;
-use tempfile::{NamedTempFile, tempfile};
+use tempfile::NamedTempFile;
 use thiserror::Error;
 use tokio::fs;
-use tokio::process::{self, Command};
+use tokio::process::{Command};
 
 mod config;
 mod content_parser;

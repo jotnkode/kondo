@@ -25,7 +25,7 @@ editor=vim
 impl Configuration {
     pub fn new() -> Self {
         let home_dir = dirs::home_dir().unwrap();
-        let mut config_path = home_dir.join(".config/kondo/kondo.toml");
+        let config_path = home_dir.join(".config/kondo/kondo.toml");
 
         if !config_path.exists() {
             fs::create_dir_all(config_path.parent().unwrap())
