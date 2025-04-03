@@ -21,7 +21,7 @@ pub fn parse_task<'s>(input: &mut &'s str) -> Result<Task> {
     let deadline = preceded(multispace0, parse_date_tag).parse_next(input);
     let content = input.trim();
 
-    Ok(Task::new(deadline.unwrap(), content))
+    Ok(Task::new(None, deadline.unwrap(), content))
 }
 
 fn parse_date_tag<'s>(input: &mut &'s str) -> Result<NaiveDate> {

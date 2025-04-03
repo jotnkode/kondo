@@ -3,9 +3,26 @@
     in the database.
 !*/
 use chrono::NaiveDate;
-use sqlx::{Error, Row, SqlitePool};
+use sqlx::{sqlite::SqliteRow, Error, Row, SqlitePool};
 
 use crate::kondo::Task;
+
+fn i64_to_bool(val: i64) -> bool {
+    val != 0
+}
+
+impl From<&SqliteRow> for Task {
+    fn from(row: &SqliteRow) -> Self {
+        Task {
+            id: row.get::<i64, _>("id"),
+            deadline: NaiveDate::parse_from_str(row.get::<&str, _>("deadline"), "%Y-%m-%d")
+                .expect("Can't parse date from db."),
+            content: row.get::<&str, _>("content").to_string(),
+            category: Some(row.get::<String, _>("category").to_string()),
+            done: i64_to_bool(row.get::<i64, _>("done")),
+        }
+    }
+}
 
 /// Inserts a task into the kondo DB and returns the generated Id or
 /// error if the insert fails.
@@ -33,11 +50,7 @@ pub async fn list_all(pool: &SqlitePool) -> Result<Vec<Task>, Error> {
             let tasks = rows
                 .iter()
                 .map(|row| {
-                    Task::new(
-                        NaiveDate::parse_from_str(row.get::<&str, _>("deadline"), "%Y-%m-%d")
-                            .expect("Can't parse date from db."),
-                        row.get::<&str, _>("content"),
-                    )
+                    Task::from(row)
                 })
                 .collect();
             Ok(tasks)
@@ -67,6 +80,7 @@ mod tests {
             .await;
 
         let task = Task::new(
+            None,
             NaiveDate::from_ymd_opt(2025, 3, 12).unwrap(),
             "Test content",
         );
@@ -87,6 +101,7 @@ mod tests {
             .await;
 
         let task = Task::new(
+            None,
             NaiveDate::from_ymd_opt(2025, 3, 12).unwrap(),
             "Test content",
         );

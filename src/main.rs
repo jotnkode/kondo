@@ -92,7 +92,7 @@ async fn add(pool: &SqlitePool, date: &Option<NaiveDate>, content: &Option<Strin
             .date()
             .checked_add_days(days)
             .expect("Invalid deadline date.");
-        let mut task = Task::new(deadline, "");
+        let mut task = Task::new(None, deadline, "");
         task = open_task_editor(task)
             .await
             .expect("Can't get task from editor");

@@ -1,15 +1,39 @@
-use color_eyre::Result;
+use color_eyre::{owo_colors::OwoColorize, Result};
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use ratatui::{
-    prelude::{Buffer, Rect}, style::{
-        palette::tailwind::{BLUE, SLATE}, Style, Stylize
+    layout::Alignment::Center, prelude::{Buffer, Rect}, style::{
+        palette::tailwind::SLATE, Color, Modifier, Style, Stylize
     }, symbols, text::{Line, Text}, widgets::{
-        Block, Borders, HighlightSpacing, List, ListItem, ListState, StatefulWidget, Widget,
+        Block, Borders, HighlightSpacing, List, ListItem, ListState, Paragraph, StatefulWidget, Widget
     }, DefaultTerminal, Frame
 };
 use sqlx::SqlitePool;
 
 use crate::{database::list_all, kondo::Task};
+
+/*
+$space-cadet: rgba(46, 41, 78, 1);
+$fairy-tale: rgba(239, 188, 213, 1);
+$lilac: rgba(190, 151, 198, 1);
+$amethyst: rgba(134, 97, 193, 1);
+$charcoal: rgba(75, 82, 103, 1);
+
+/* SCSS RGB */
+$blue-munsell: rgba(87, 143, 158, 1);
+$feldgrau: rgba(92, 110, 91, 1);
+$midnight-green: rgba(13, 51, 56, 1);
+$sea-green: rgba(77, 143, 86, 1);
+$british-racing-green: rgba(18, 69, 48, 1);
+*/
+
+const HEADER_BG: Color = Color::Rgb(13, 51, 56);
+const HEADER_FG: Color = Color::Rgb(77, 143, 86);
+
+const LIST_BG: Color = Color::Rgb(13, 51, 56); //Color::Rgb(75, 82, 103);
+const LIST_ITEM_HEADER: Color = Color::Rgb(77, 143, 86);
+const LIST_ITEM_BODY: Color = Color::Rgb(77, 143, 86);
+const LIST_ITEM_SEPARATOR: Color = Color::Rgb(77, 143, 86);
+const LIST_ITEM_TEXT: Color = Color::Rgb(92, 110, 91);
 
 pub struct TaskList {
     items: Vec<Task>,
@@ -63,11 +87,12 @@ impl TaskWidget {
 
     fn render_list(&mut self, area: Rect, buf: &mut Buffer) {
         let block = Block::new()
-            .title("Kondo Tasks")
+            .title(" [Kondo Tasks] ")
             .borders(Borders::TOP)
             .border_set(symbols::border::PLAIN)
-            .border_style(Style::new().fg(SLATE.c100).bg(BLUE.c800))
-            .bg(SLATE.c700);
+            .border_style(Style::new().fg(HEADER_FG).bg(HEADER_BG))
+            .title_alignment(Center)
+            .bg(LIST_BG);
 
         let items: Vec<ListItem> = self
             .task_list
@@ -78,15 +103,29 @@ impl TaskWidget {
 
         let list = List::new(items)
             .block(block)
-            .highlight_style(SLATE.c500)
-            .highlight_symbol(">")
+            .bg(LIST_BG)
+            .highlight_style(LIST_ITEM_BODY)
+            .highlight_symbol(" > ")
             .highlight_spacing(HighlightSpacing::Always);
 
         StatefulWidget::render(list, area, buf, &mut self.task_list.list_state);
     }
+
     fn run(mut self, mut terminal: DefaultTerminal) -> Result<()> {
         while !self.exit {
-            terminal.draw(|frame| frame.render_widget(&mut self, frame.area()))?;
+
+            terminal.draw(|frame| {
+                let size = frame.size(); // Get full terminal size
+
+                    let block = Block::default()
+                        .title("Full Screen Block")
+                        .borders(Borders::NONE)
+                        .style(Style::default().bg(LIST_BG));
+
+                    frame.render_widget(block, size);
+
+                frame.render_widget(&mut self, frame.area());
+            })?;
             if let Event::Key(key) = event::read()? {
                 self.handle_key(key);
             };
@@ -98,21 +137,26 @@ impl TaskWidget {
 impl From<&Task> for ListItem<'_> {
     fn from(value: &Task) -> Self {
 
+        let multiline: Vec<Line<'_>> = value
+            .content
+            .split('\n')
+            .map( |s| -> Line<'_> { Line::styled(s.to_string(), LIST_ITEM_TEXT) })
+            .collect();
+
         let lines = [
             Line::styled(
                 value.deadline.format("%Y-%m-%d").to_string(),
-                SLATE.c200,
-            ),
+                LIST_ITEM_TEXT,
+            ).add_modifier(Modifier::BOLD),
             Line::styled(
                 "---------------------".to_string(),
-                SLATE.c50,
-            ),
-            Line::styled(
-                value.content.to_string(),
-                SLATE.c200,
+                LIST_ITEM_SEPARATOR,
             )
         ];
-        let text = Text::from(lines.to_vec());
+
+        let items: Vec<Line<'_>> = lines.to_vec().iter().chain(multiline.iter()).cloned().collect();
+
+        let text = Text::from(items);
         ListItem::new(text)
     }
 }
