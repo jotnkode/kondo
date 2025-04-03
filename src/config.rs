@@ -1,6 +1,4 @@
-use std::{
-    fs,
-};
+use std::fs;
 
 use config::{Config, Environment, File};
 use serde::Deserialize;

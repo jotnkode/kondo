@@ -3,7 +3,7 @@
     in the database.
 !*/
 use chrono::NaiveDate;
-use sqlx::{Error, SqlitePool, Row};
+use sqlx::{Error, Row, SqlitePool};
 
 use crate::kondo::Task;
 
@@ -28,17 +28,22 @@ pub async fn list_all(pool: &SqlitePool) -> Result<Vec<Task>, Error> {
     let select_stmt = r#"
         select * from task
         "#;
-    match sqlx::query(select_stmt)
-        .fetch_all(pool)
-        .await {
-            Ok(rows) => {
-                let tasks = rows.iter().map(|row| {
-                    Task::new(NaiveDate::parse_from_str(row.get::<&str, _>("deadline"), "%Y-%m-%d").expect("Can't parse date from db."), row.get::<&str, _>("content"))
-                }).collect();
-                Ok(tasks)
-            },
-            Err(e) => Err(e),
+    match sqlx::query(select_stmt).fetch_all(pool).await {
+        Ok(rows) => {
+            let tasks = rows
+                .iter()
+                .map(|row| {
+                    Task::new(
+                        NaiveDate::parse_from_str(row.get::<&str, _>("deadline"), "%Y-%m-%d")
+                            .expect("Can't parse date from db."),
+                        row.get::<&str, _>("content"),
+                    )
+                })
+                .collect();
+            Ok(tasks)
         }
+        Err(e) => Err(e),
+    }
 }
 
 #[cfg(test)]
