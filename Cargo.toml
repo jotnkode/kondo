@@ -16,4 +16,4 @@ sqlx = { version = "0.8.3", features = ["derive", "runtime-tokio", "sqlite"] }
 tempfile = "3.19.1"
 thiserror = "2.0.12"
 tokio = { version = "1.44.1", features = ["full"] }
-winnow = { version = "0.7.4", features = ["debug"] }
+winnow = { version = "0.7.4", features = [] }

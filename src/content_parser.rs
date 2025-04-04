@@ -6,7 +6,6 @@ use winnow::ascii::multispace0;
 use winnow::combinator::preceded;
 use winnow::combinator::repeat;
 use winnow::error::ParserError;
-use winnow::prelude::*;
 use winnow::stream::Stream;
 use winnow::token::take_while;
 

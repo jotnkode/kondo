@@ -1,4 +1,8 @@
-use color_eyre::{owo_colors::OwoColorize, Result};
+use std::{io::Write};
+use tokio::process::Command;
+use tokio::fs;
+use crate::{Error, CFG};
+use color_eyre::{Result};
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use ratatui::{
     layout::Alignment::Center, prelude::{Buffer, Rect}, style::{
@@ -8,29 +12,14 @@ use ratatui::{
     }, DefaultTerminal
 };
 use sqlx::SqlitePool;
+use tempfile::NamedTempFile;
 
-use crate::{database::list_all, kondo::Task};
-
-/*
-$space-cadet: rgba(46, 41, 78, 1);
-$fairy-tale: rgba(239, 188, 213, 1);
-$lilac: rgba(190, 151, 198, 1);
-$amethyst: rgba(134, 97, 193, 1);
-$charcoal: rgba(75, 82, 103, 1);
-
-/* SCSS RGB */
-$blue-munsell: rgba(87, 143, 158, 1);
-$feldgrau: rgba(92, 110, 91, 1);
-$midnight-green: rgba(13, 51, 56, 1);
-$sea-green: rgba(77, 143, 86, 1);
-$british-racing-green: rgba(18, 69, 48, 1);
-*/
+use crate::{content_parser::parse_task, database::list_all, kondo::Task};
 
 const HEADER_BG: Color = Color::Rgb(13, 51, 56);
 const HEADER_FG: Color = Color::Rgb(77, 143, 86);
 
 const LIST_BG: Color = Color::Rgb(13, 51, 56); //Color::Rgb(75, 82, 103);
-const LIST_ITEM_HEADER: Color = Color::Rgb(77, 143, 86);
 const LIST_ITEM_BODY: Color = Color::Rgb(77, 143, 86);
 const LIST_ITEM_SEPARATOR: Color = Color::Rgb(77, 143, 86);
 const LIST_ITEM_TEXT: Color = Color::Rgb(92, 110, 91);
@@ -82,7 +71,7 @@ impl TaskWidget {
         self.task_list.list_state.select_previous();
     }
     fn toggle(&mut self) {
-        if let Some(task) = self.task_list.list_state.selected() {}
+        if let Some(_task) = self.task_list.list_state.selected() {}
     }
 
     fn render_list(&mut self, area: Rect, buf: &mut Buffer) {
@@ -115,7 +104,7 @@ impl TaskWidget {
         while !self.exit {
 
             terminal.draw(|frame| {
-                let size = frame.size(); // Get full terminal size
+                let size = frame.area(); // Get full terminal size
 
                     let block = Block::default()
                         .title("Full Screen Block")
@@ -178,4 +167,31 @@ pub async fn run(pool: &SqlitePool) -> Result<()> {
 
     ratatui::restore();
     Ok(())
+}
+
+pub async fn open_task_editor(task: Task) -> Result<Task, Error> {
+    let content = format!(
+        "[{}]\n{}",
+        task.deadline.format("%Y-%m-%d").to_string(),
+        task.content
+    );
+    let mut tmpf = NamedTempFile::new().expect("Can't create temp file");
+    let _ = tmpf.write_all(content.as_bytes());
+    let file_name = tmpf.into_temp_path();
+
+    let mut cmd = Command::new(&CFG.get().expect("Can't load configuration.").kondo.editor);
+    cmd.arg(
+        file_name
+            .as_os_str()
+            .to_str()
+            .expect("Can't convert path to string"),
+    );
+    let mut vim = cmd.spawn().expect("Can't open editor.");
+    let _ = vim.wait().await;
+    let updated_content = fs::read_to_string(file_name.as_os_str().to_str().unwrap())
+        .await
+        .expect("Couldn't read file.");
+
+    let new_task = parse_task(&mut updated_content.as_str()).expect("Couldn't parse task");
+    Ok(new_task)
 }
